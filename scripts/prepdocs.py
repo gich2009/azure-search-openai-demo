@@ -46,19 +46,23 @@ def blob_name_from_file_page(filename, page = 0):
     else:
         return os.path.basename(filename)
 
-def upload_blobs(filename):
+
+def upload_blobs(filename, container_name):
     blob_service = BlobServiceClient(account_url=f"https://{args.storageaccount}.blob.core.windows.net", credential=storage_creds)
-    blob_container = blob_service.get_container_client(args.container)
+    blob_container = blob_service.get_container_client(container_name)
+    
+    # Check if the container exists, if not, create it.
     if not blob_container.exists():
         blob_container.create_container()
 
-    # if file is PDF split into pages and upload each page as a separate blob
+    # If the file is a PDF, split it into pages and upload each page as a separate blob.
     if os.path.splitext(filename)[1].lower() == ".pdf":
         reader = PdfReader(filename)
         pages = reader.pages
         for i in range(len(pages)):
             blob_name = blob_name_from_file_page(filename, i)
-            if args.verbose: print(f"\tUploading blob for page {i} -> {blob_name}")
+            if args.verbose: 
+                print(f"\tUploading blob for page {i} -> {blob_name}")
             f = io.BytesIO()
             writer = PdfWriter()
             writer.add_page(pages[i])
@@ -70,19 +74,67 @@ def upload_blobs(filename):
         with open(filename,"rb") as data:
             blob_container.upload_blob(blob_name, data, overwrite=True)
 
-def remove_blobs(filename):
-    if args.verbose: print(f"Removing blobs for '{filename or '<all>'}'")
+
+# def upload_blobs(filename):
+#     blob_service = BlobServiceClient(account_url=f"https://{args.storageaccount}.blob.core.windows.net", credential=storage_creds)
+#     blob_container = blob_service.get_container_client(args.container)
+#     if not blob_container.exists():
+#         blob_container.create_container()
+
+#     # if file is PDF split into pages and upload each page as a separate blob
+#     if os.path.splitext(filename)[1].lower() == ".pdf":
+#         reader = PdfReader(filename)
+#         pages = reader.pages
+#         for i in range(len(pages)):
+#             blob_name = blob_name_from_file_page(filename, i)
+#             if args.verbose: print(f"\tUploading blob for page {i} -> {blob_name}")
+#             f = io.BytesIO()
+#             writer = PdfWriter()
+#             writer.add_page(pages[i])
+#             writer.write(f)
+#             f.seek(0)
+#             blob_container.upload_blob(blob_name, f, overwrite=True)
+#     else:
+#         blob_name = blob_name_from_file_page(filename)
+#         with open(filename,"rb") as data:
+#             blob_container.upload_blob(blob_name, data, overwrite=True)
+
+def remove_blobs(filename, container_name=None):
+    if args.verbose: 
+        print(f"Removing blobs for '{filename or '<all>'}'")
+    
     blob_service = BlobServiceClient(account_url=f"https://{args.storageaccount}.blob.core.windows.net", credential=storage_creds)
-    blob_container = blob_service.get_container_client(args.container)
+    
+    if container_name is None:
+        container_name = args.container
+
+    blob_container = blob_service.get_container_client(container_name)
     if blob_container.exists():
         if filename is None:
             blobs = blob_container.list_blob_names()
         else:
             prefix = os.path.splitext(os.path.basename(filename))[0]
             blobs = filter(lambda b: re.match(f"{prefix}-\d+\.pdf", b), blob_container.list_blob_names(name_starts_with=os.path.splitext(os.path.basename(prefix))[0]))
+        
         for b in blobs:
-            if args.verbose: print(f"\tRemoving blob {b}")
+            if args.verbose: 
+                print(f"\tRemoving blob {b}")
             blob_container.delete_blob(b)
+
+
+# def remove_blobs(filename):
+#     if args.verbose: print(f"Removing blobs for '{filename or '<all>'}'")
+#     blob_service = BlobServiceClient(account_url=f"https://{args.storageaccount}.blob.core.windows.net", credential=storage_creds)
+#     blob_container = blob_service.get_container_client(args.container)
+#     if blob_container.exists():
+#         if filename is None:
+#             blobs = blob_container.list_blob_names()
+#         else:
+#             prefix = os.path.splitext(os.path.basename(filename))[0]
+#             blobs = filter(lambda b: re.match(f"{prefix}-\d+\.pdf", b), blob_container.list_blob_names(name_starts_with=os.path.splitext(os.path.basename(prefix))[0]))
+#         for b in blobs:
+#             if args.verbose: print(f"\tRemoving blob {b}")
+#             blob_container.delete_blob(b)
 
 def table_to_html(table):
     table_html = "<table>"
@@ -234,28 +286,34 @@ def compute_embedding(text):
     refresh_openai_token()
     return openai.Embedding.create(engine=args.openaideployment, input=text)["data"][0]["embedding"]
 
-def create_search_index():
-    if args.verbose: print(f"Ensuring search index {args.index} exists")
+def create_search_index(files, verbose=False):
     index_client = SearchIndexClient(endpoint=f"https://{args.searchservice}.search.windows.net/",
                                      credential=search_creds)
-    if args.index not in index_client.list_index_names():
-        index = SearchIndex(
-            name=args.index,
-            fields=[
-                SimpleField(name="id", type="Edm.String", key=True),
-                SearchableField(name="content", type="Edm.String", analyzer_name="en.microsoft"),
-                SearchField(name="embedding", type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
-                            hidden=False, searchable=True, filterable=False, sortable=False, facetable=False,
-                            vector_search_dimensions=1536, vector_search_configuration="default"),
-                SimpleField(name="category", type="Edm.String", filterable=True, facetable=True),
-                SimpleField(name="sourcepage", type="Edm.String", filterable=True, facetable=True),
-                SimpleField(name="sourcefile", type="Edm.String", filterable=True, facetable=True)
-            ],
-            semantic_settings=SemanticSettings(
-                configurations=[SemanticConfiguration(
-                    name='default',
-                    prioritized_fields=PrioritizedFields(
-                        title_field=None, prioritized_content_fields=[SemanticField(field_name='content')]))]),
+    
+    for file_arg in files:
+        _, index_name, _ = file_arg.split(':')  # Split the file argument to extract the index name
+
+        if verbose:
+            print(f"Ensuring search index {index_name} exists")
+        
+        if index_name not in index_client.list_index_names():
+            index = SearchIndex(
+                name=index_name,
+                fields=[
+                    SimpleField(name="id", type="Edm.String", key=True),
+                    SearchableField(name="content", type="Edm.String", analyzer_name="en.microsoft"),
+                    SearchField(name="embedding", type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+                                hidden=False, searchable=True, filterable=False, sortable=False, facetable=False,
+                                vector_search_dimensions=1536, vector_search_configuration="default"),
+                    SimpleField(name="category", type="Edm.String", filterable=True, facetable=True),
+                    SimpleField(name="sourcepage", type="Edm.String", filterable=True, facetable=True),
+                    SimpleField(name="sourcefile", type="Edm.String", filterable=True, facetable=True)
+                ],
+                semantic_settings=SemanticSettings(
+                    configurations=[SemanticConfiguration(
+                        name='default',
+                        prioritized_fields=PrioritizedFields(
+                            title_field=None, prioritized_content_fields=[SemanticField(field_name='content')]))]),
                 vector_search=VectorSearch(
                     algorithm_configurations=[
                         VectorSearchAlgorithmConfiguration(
@@ -266,15 +324,56 @@ def create_search_index():
                     ]
                 )
             )
-        if args.verbose: print(f"Creating {args.index} search index")
-        index_client.create_index(index)
-    else:
-        if args.verbose: print(f"Search index {args.index} already exists")
 
-def index_sections(filename, sections):
-    if args.verbose: print(f"Indexing sections from '{filename}' into search index '{args.index}'")
+            if verbose:
+                print(f"Creating {index_name} search index")
+
+            index_client.create_index(index)
+        else:
+            if verbose:
+                print(f"Search index {index_name} already exists")
+
+# def create_search_index():
+#     if args.verbose: print(f"Ensuring search index {args.index} exists")
+#     index_client = SearchIndexClient(endpoint=f"https://{args.searchservice}.search.windows.net/",
+#                                      credential=search_creds)
+#     if args.index not in index_client.list_index_names():
+#         index = SearchIndex(
+#             name=args.index,
+#             fields=[
+#                 SimpleField(name="id", type="Edm.String", key=True),
+#                 SearchableField(name="content", type="Edm.String", analyzer_name="en.microsoft"),
+#                 SearchField(name="embedding", type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+#                             hidden=False, searchable=True, filterable=False, sortable=False, facetable=False,
+#                             vector_search_dimensions=1536, vector_search_configuration="default"),
+#                 SimpleField(name="category", type="Edm.String", filterable=True, facetable=True),
+#                 SimpleField(name="sourcepage", type="Edm.String", filterable=True, facetable=True),
+#                 SimpleField(name="sourcefile", type="Edm.String", filterable=True, facetable=True)
+#             ],
+#             semantic_settings=SemanticSettings(
+#                 configurations=[SemanticConfiguration(
+#                     name='default',
+#                     prioritized_fields=PrioritizedFields(
+#                         title_field=None, prioritized_content_fields=[SemanticField(field_name='content')]))]),
+#                 vector_search=VectorSearch(
+#                     algorithm_configurations=[
+#                         VectorSearchAlgorithmConfiguration(
+#                             name="default",
+#                             kind="hnsw",
+#                             hnsw_parameters=HnswParameters(metric="cosine")
+#                         )
+#                     ]
+#                 )
+#             )
+#         if args.verbose: print(f"Creating {args.index} search index")
+#         index_client.create_index(index)
+#     else:
+#         if args.verbose: print(f"Search index {args.index} already exists")
+
+def index_sections(filename, sections, index_name):
+    if args.verbose: print(f"Indexing sections from '{filename}' into search index '{index_name}'")
     search_client = SearchClient(endpoint=f"https://{args.searchservice}.search.windows.net/",
-                                    index_name=args.index,
+                                    index_name=index_name,
                                     credential=search_creds)
     i = 0
     batch = []
@@ -292,20 +391,45 @@ def index_sections(filename, sections):
         succeeded = sum([1 for r in results if r.succeeded])
         if args.verbose: print(f"\tIndexed {len(results)} sections, {succeeded} succeeded")
 
-def remove_from_index(filename):
-    if args.verbose: print(f"Removing sections from '{filename or '<all>'}' from search index '{args.index}'")
+
+def remove_from_index(filename, index_name=None):
+    # if index_name is None:
+    #     index_name = index_name
+
+    if args.verbose: 
+        print(f"Removing sections from '{filename or '<all>'}' from search index '{index_name}'")
+    
     search_client = SearchClient(endpoint=f"https://{args.searchservice}.search.windows.net/",
-                                    index_name=args.index,
+                                    index_name=index_name,
                                     credential=search_creds)
+    
     while True:
         filter = None if filename is None else f"sourcefile eq '{os.path.basename(filename)}'"
         r = search_client.search("", filter=filter, top=1000, include_total_count=True)
         if r.get_count() == 0:
             break
         r = search_client.delete_documents(documents=[{ "id": d["id"] } for d in r])
-        if args.verbose: print(f"\tRemoved {len(r)} sections from index")
+        if args.verbose: 
+            print(f"\tRemoved {len(r)} sections from index")
+        
         # It can take a few seconds for search results to reflect changes, so wait a bit
         time.sleep(2)
+
+
+# def remove_from_index(filename):
+#     if args.verbose: print(f"Removing sections from '{filename or '<all>'}' from search index '{args.index}'")
+#     search_client = SearchClient(endpoint=f"https://{args.searchservice}.search.windows.net/",
+#                                     index_name=args.index,
+#                                     credential=search_creds)
+#     while True:
+#         filter = None if filename is None else f"sourcefile eq '{os.path.basename(filename)}'"
+#         r = search_client.search("", filter=filter, top=1000, include_total_count=True)
+#         if r.get_count() == 0:
+#             break
+#         r = search_client.delete_documents(documents=[{ "id": d["id"] } for d in r])
+#         if args.verbose: print(f"\tRemoved {len(r)} sections from index")
+#         # It can take a few seconds for search results to reflect changes, so wait a bit
+#         time.sleep(2)
 
 # refresh open ai token every 5 minutes
 def refresh_openai_token():
@@ -320,7 +444,7 @@ if __name__ == "__main__":
         description="Prepare documents by extracting content from PDFs, splitting content into sections, uploading to blob storage, and indexing in a search index.",
         epilog="Example: prepdocs.py '..\data\*' --storageaccount myaccount --container mycontainer --searchservice mysearch --index myindex -v"
         )
-    parser.add_argument("files", help="Files to be processed")
+    parser.add_argument("files", nargs='*', help="Files to be processed")
     parser.add_argument("--category", help="Value for the category field in the search index for all sections indexed in this run")
     parser.add_argument("--skipblobs", action="store_true", help="Skip uploading individual pages to Azure Blob Storage")
     parser.add_argument("--storageaccount", help="Azure Blob Storage account name")
@@ -376,20 +500,24 @@ if __name__ == "__main__":
         remove_from_index(None)
     else:
         if not args.remove:
-            create_search_index()
-
+            create_search_index(args.files, args.verbose)
+            # create_search_index()
+        
         print("Processing files...")
-        for filename in glob.glob(args.files):
-            if args.verbose: print(f"Processing '{filename}'")
-            if args.remove:
-                remove_blobs(filename)
-                remove_from_index(filename)
-            elif args.removeall:
-                remove_blobs(None)
-                remove_from_index(None)
-            else:
-                if not args.skipblobs:
-                    upload_blobs(filename)
-                page_map = get_document_text(filename)
-                sections = create_sections(os.path.basename(filename), page_map, use_vectors)
-                index_sections(os.path.basename(filename), sections)
+        for file_pattern in args.files:
+           filepath, index, container_name = file_pattern.split(":")
+           for filename in glob.glob(filepath):
+                if args.verbose: 
+                    print(f"Processing '{filename}'")
+                if args.remove:
+                    remove_blobs(filename=filename, container_name=container_name)
+                    remove_from_index(filename=filename, index_name=index)
+                elif args.removeall:
+                    remove_blobs(None)
+                    remove_from_index(None)
+                else:
+                    if not args.skipblobs:
+                        upload_blobs(filename=filename, container_name=container_name)
+                    page_map = get_document_text(filename)
+                    sections = create_sections(os.path.basename(filename), page_map, use_vectors)
+                    index_sections(os.path.basename(filename), sections, index_name=index)

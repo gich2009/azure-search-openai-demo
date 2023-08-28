@@ -21,6 +21,7 @@ param searchServiceResourceGroupLocation string = location
 
 param searchServiceSkuName string = 'standard'
 param searchIndexName string // Set in main.parameters.json
+param searchIndexNames string
 
 param storageAccountName string = ''
 param storageResourceGroupName string = ''
@@ -47,7 +48,7 @@ param formRecognizerResourceGroupLocation string = location
 param formRecognizerSkuName string = 'S0'
 
 param chatGptDeploymentName string // Set in main.parameters.json
-param chatGptDeploymentCapacity int = 30
+param chatGptDeploymentCapacity int = 120
 param chatGptModelName string = 'gpt-35-turbo'
 param chatGptModelVersion string = '0613'
 param embeddingDeploymentName string = 'embedding'
@@ -133,6 +134,7 @@ module backend 'core/host/appservice.bicep' = {
       AZURE_STORAGE_CONTAINER: storageContainerName
       AZURE_OPENAI_SERVICE: openAi.outputs.name
       AZURE_SEARCH_INDEX: searchIndexName
+      AZURE_SEARCH_INDICES: searchIndexNames
       AZURE_SEARCH_SERVICE: searchService.outputs.name
       AZURE_OPENAI_CHATGPT_DEPLOYMENT: chatGptDeploymentName
       AZURE_OPENAI_CHATGPT_MODEL: chatGptModelName

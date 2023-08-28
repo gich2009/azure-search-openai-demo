@@ -111,6 +111,96 @@ async def ensure_openai_token():
         current_app.config[CONFIG_OPENAI_TOKEN] = openai_token
         openai.api_key = openai_token.token
 
+# @bp.before_app_serving
+# async def setup_clients():
+
+#     # Fetch environment variables or use default values.
+#     AZURE_STORAGE_ACCOUNT = os.getenv("AZURE_STORAGE_ACCOUNT")
+#     AZURE_STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER")
+#     AZURE_SEARCH_SERVICE = os.getenv("AZURE_SEARCH_SERVICE")
+#     AZURE_SEARCH_INDICES = os.getenv("AZURE_SEARCH_INDICES").split(',')
+#     AZURE_OPENAI_SERVICE = os.getenv("AZURE_OPENAI_SERVICE")
+#     AZURE_OPENAI_CHATGPT_DEPLOYMENT = os.getenv("AZURE_OPENAI_CHATGPT_DEPLOYMENT")
+#     AZURE_OPENAI_CHATGPT_MODEL = os.getenv("AZURE_OPENAI_CHATGPT_MODEL")
+#     AZURE_OPENAI_EMB_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMB_DEPLOYMENT")
+
+#     KB_FIELDS_CONTENT = os.getenv("KB_FIELDS_CONTENT", "content")
+#     KB_FIELDS_SOURCEPAGE = os.getenv("KB_FIELDS_SOURCEPAGE", "sourcepage")
+
+#     # Set up Azure authentication.
+#     azure_credential = DefaultAzureCredential(exclude_shared_token_cache_credential=True)
+
+#     # Set up Blob Storage clients.
+#     blob_client = BlobServiceClient(
+#         account_url=f"https://{AZURE_STORAGE_ACCOUNT}.blob.core.windows.net",
+#         credential=azure_credential
+#     )
+#     blob_container_client = blob_client.get_container_client(AZURE_STORAGE_CONTAINER)
+
+#     # Set up Search clients for multiple indices.
+#     search_clients = {}
+#     for index_name in AZURE_SEARCH_INDICES:
+#         search_clients[index_name] = SearchClient(
+#             endpoint=f"https://{AZURE_SEARCH_SERVICE}.search.windows.net",
+#             index_name=index_name,
+#             credential=azure_credential
+#         )
+
+#     # Setup OpenAI
+#     openai.api_base = f"https://{AZURE_OPENAI_SERVICE}.openai.azure.com"
+#     openai.api_version = "2023-05-15"
+#     openai.api_type = "azure_ad"
+#     openai_token = await azure_credential.get_token(
+#         "https://cognitiveservices.azure.com/.default"
+#     )
+#     openai.api_key = openai_token.token
+
+#     # Store some configuration data for use in later requests.
+#     current_app.config[CONFIG_OPENAI_TOKEN] = openai_token
+#     current_app.config[CONFIG_CREDENTIAL] = azure_credential
+#     current_app.config[CONFIG_BLOB_CONTAINER_CLIENT] = blob_container_client
+
+#     # Update the approaches to integrate GPT with external knowledge.
+#     current_app.config[CONFIG_ASK_APPROACHES] = {
+#         index_name: {
+#             "rtr": RetrieveThenReadApproach(
+#                 search_clients[index_name],
+#                 AZURE_OPENAI_CHATGPT_DEPLOYMENT,
+#                 AZURE_OPENAI_CHATGPT_MODEL,
+#                 AZURE_OPENAI_EMB_DEPLOYMENT,
+#                 KB_FIELDS_SOURCEPAGE,
+#                 KB_FIELDS_CONTENT
+#             ),
+#             "rrr": ReadRetrieveReadApproach(
+#                 search_clients[index_name],
+#                 AZURE_OPENAI_CHATGPT_DEPLOYMENT,
+#                 AZURE_OPENAI_EMB_DEPLOYMENT,
+#                 KB_FIELDS_SOURCEPAGE,
+#                 KB_FIELDS_CONTENT
+#             ),
+#             "rda": ReadDecomposeAsk(
+#                 search_clients[index_name],
+#                 AZURE_OPENAI_CHATGPT_DEPLOYMENT,
+#                 AZURE_OPENAI_EMB_DEPLOYMENT,
+#                 KB_FIELDS_SOURCEPAGE,
+#                 KB_FIELDS_CONTENT
+#             )
+#         }
+#         for index_name in AZURE_SEARCH_INDICES
+#     }
+
+#     current_app.config[CONFIG_CHAT_APPROACHES] = {
+#         "rrr": ChatReadRetrieveReadApproach(
+#             search_clients[AZURE_SEARCH_INDICES[0]],
+#             AZURE_OPENAI_CHATGPT_DEPLOYMENT,
+#             AZURE_OPENAI_CHATGPT_MODEL,
+#             AZURE_OPENAI_EMB_DEPLOYMENT,
+#             KB_FIELDS_SOURCEPAGE,
+#             KB_FIELDS_CONTENT
+#         )
+#     }
+
+
 @bp.before_app_serving
 async def setup_clients():
 

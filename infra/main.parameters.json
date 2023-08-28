@@ -33,7 +33,10 @@
       "value": "S0"
     },
     "searchIndexName": {
-      "value": "${AZURE_SEARCH_INDEX=gptkbindex}"
+      "value": "${AZURE_SEARCH_INDEX=natural-capital}"
+    },
+    "searchIndexNames": {
+      "value": "${AZURE_SEARCH_INDICES=natural-capital,energy,climate-financing,green-minerals,sust-agric,adaptation,infrastructure}"
     },
     "searchServiceName": {
       "value": "${AZURE_SEARCH_SERVICE}"
