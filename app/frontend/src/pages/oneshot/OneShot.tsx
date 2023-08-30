@@ -21,6 +21,7 @@ export function Component(): JSX.Element {
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
+    const [indexName, setIndexName] = useState<string>("natural-capital");
 
     const lastQuestionRef = useRef<string>("");
 
@@ -51,7 +52,8 @@ export function Component(): JSX.Element {
                     top: retrieveCount,
                     retrievalMode: retrievalMode,
                     semanticRanker: useSemanticRanker,
-                    semanticCaptions: useSemanticCaptions
+                    semanticCaptions: useSemanticCaptions,
+                    indexName: indexName
                 }
             };
             const result = await askApi(request);
@@ -61,6 +63,10 @@ export function Component(): JSX.Element {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const onIndexNameChange = (_ev: React.FormEvent<HTMLDivElement>, option?: IDropdownOption<string> | undefined, index?: number | undefined) => {
+        setIndexName(option?.data || "natural-capital");
     };
 
     const onPromptTemplateChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -259,6 +265,36 @@ export function Component(): JSX.Element {
                     ]}
                     required
                     onChange={onRetrievalModeChange}
+                />
+                <Dropdown
+                    className={styles.chatSettingsSeparator}
+                    label="Index name"
+                    options={[
+                        { key: "natural-capital", text: "Natural Capital", selected: indexName == "natural-capital", data: "natural-capital" },
+                        { key: "energy", text: "Energy Transition and Renewable Energy", selected: indexName == "energy", data: "energy" },
+                        {
+                            key: "green-minerals",
+                            text: "Green minerals and manufacturing",
+                            selected: indexName == "green-minerals",
+                            data: "green-minerals"
+                        },
+                        {
+                            key: "sust-agric",
+                            text: "Sustainable agriculture, land use and ocean use",
+                            selected: indexName == "sust-agric",
+                            data: "sust-agric"
+                        },
+                        { key: "climate-financing", text: "Climate financing", selected: indexName == "climate-financing", data: "climate-financing" },
+                        { key: "adaptation", text: "Adaptation", selected: indexName == "adaptation", data: "adaptation" },
+                        {
+                            key: "infrastructure",
+                            text: "Sustainable Infrastructure and urbanization",
+                            selected: indexName == "infrastructure",
+                            data: "infrastructure"
+                        }
+                    ]}
+                    required
+                    onChange={onIndexNameChange}
                 />
             </Panel>
         </div>

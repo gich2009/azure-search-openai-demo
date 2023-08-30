@@ -18,6 +18,7 @@ const Chat = () => {
     const [promptTemplate, setPromptTemplate] = useState<string>("");
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
     const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>(RetrievalMode.Hybrid);
+    const [indexName, setIndexName] = useState<string>("natural-capital");
     const [useSemanticRanker, setUseSemanticRanker] = useState<boolean>(true);
     const [useSemanticCaptions, setUseSemanticCaptions] = useState<boolean>(false);
     const [excludeCategory, setExcludeCategory] = useState<string>("");
@@ -53,6 +54,7 @@ const Chat = () => {
                     excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
                     top: retrieveCount,
                     retrievalMode: retrievalMode,
+                    indexName: indexName,
                     semanticRanker: useSemanticRanker,
                     semanticCaptions: useSemanticCaptions,
                     suggestFollowupQuestions: useSuggestFollowupQuestions
@@ -87,6 +89,10 @@ const Chat = () => {
 
     const onRetrievalModeChange = (_ev: React.FormEvent<HTMLDivElement>, option?: IDropdownOption<RetrievalMode> | undefined, index?: number | undefined) => {
         setRetrievalMode(option?.data || RetrievalMode.Hybrid);
+    };
+
+    const onIndexNameChange = (_ev: React.FormEvent<HTMLDivElement>, option?: IDropdownOption<string> | undefined, index?: number | undefined) => {
+        setIndexName(option?.data || "natural-capital");
     };
 
     const onUseSemanticRankerChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {
@@ -261,6 +267,36 @@ const Chat = () => {
                         ]}
                         required
                         onChange={onRetrievalModeChange}
+                    />
+                    <Dropdown
+                        className={styles.chatSettingsSeparator}
+                        label="Index name"
+                        options={[
+                            { key: "natural-capital", text: "Natural Capital", selected: indexName == "natural-capital", data: "natural-capital" },
+                            { key: "energy", text: "Energy Transition and Renewable Energy", selected: indexName == "energy", data: "energy" },
+                            {
+                                key: "green-minerals",
+                                text: "Green minerals and manufacturing",
+                                selected: indexName == "green-minerals",
+                                data: "green-minerals"
+                            },
+                            {
+                                key: "sust-agric",
+                                text: "Sustainable agriculture, land use and ocean use",
+                                selected: indexName == "sust-agric",
+                                data: "sust-agric"
+                            },
+                            { key: "climate-financing", text: "Climate financing", selected: indexName == "climate-financing", data: "climate-financing" },
+                            { key: "adaptation", text: "Adaptation", selected: indexName == "adaptation", data: "adaptation" },
+                            {
+                                key: "infrastructure",
+                                text: "Sustainable Infrastructure and urbanization",
+                                selected: indexName == "infrastructure",
+                                data: "infrastructure"
+                            }
+                        ]}
+                        required
+                        onChange={onIndexNameChange}
                     />
                 </Panel>
             </div>

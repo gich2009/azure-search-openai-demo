@@ -503,21 +503,21 @@ if __name__ == "__main__":
             create_search_index(args.files, args.verbose)
             # create_search_index()
         
-        print("Processing files...")
-        for file_pattern in args.files:
-           filepath, index, container_name = file_pattern.split(":")
-           for filename in glob.glob(filepath):
-                if args.verbose: 
-                    print(f"Processing '{filename}'")
-                if args.remove:
-                    remove_blobs(filename=filename, container_name=container_name)
-                    remove_from_index(filename=filename, index_name=index)
-                elif args.removeall:
-                    remove_blobs(None)
-                    remove_from_index(None)
-                else:
-                    if not args.skipblobs:
-                        upload_blobs(filename=filename, container_name=container_name)
-                    page_map = get_document_text(filename)
-                    sections = create_sections(os.path.basename(filename), page_map, use_vectors)
-                    index_sections(os.path.basename(filename), sections, index_name=index)
+        # print("Processing files...")
+        # for file_pattern in args.files:
+        #    filepath, index, container_name = file_pattern.split(":")
+        #    for filename in glob.glob(filepath):
+        #         if args.verbose: 
+        #             print(f"Processing '{filename}'")
+        #         if args.remove:
+        #             remove_blobs(filename=filename, container_name=container_name)
+        #             remove_from_index(filename=filename, index_name=index)
+        #         elif args.removeall:
+        #             remove_blobs(None)
+        #             remove_from_index(None)
+        #         else:
+        #             if not args.skipblobs:
+        #                 upload_blobs(filename=filename, container_name=container_name)
+        #             page_map = get_document_text(filename)
+        #             sections = create_sections(os.path.basename(filename), page_map, use_vectors)
+        #             index_sections(os.path.basename(filename), sections, index_name=index)

@@ -36,7 +36,7 @@
       "value": "${AZURE_SEARCH_INDEX=natural-capital}"
     },
     "searchIndexNames": {
-      "value": "${AZURE_SEARCH_INDICES=natural-capital,energy,climate-financing,green-minerals,sust-agric,adaptation,infrastructure}"
+      "value": "${AZURE_SEARCH_INDICES}"
     },
     "searchServiceName": {
       "value": "${AZURE_SEARCH_SERVICE}"

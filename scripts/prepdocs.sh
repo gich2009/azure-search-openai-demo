@@ -39,7 +39,7 @@ DIRECTORY_TO_CONTAINER["sustagric"]="sust-agric"
 DIRECTORY_TO_CONTAINER["climatefinancing"]="climate-financing"
 DIRECTORY_TO_CONTAINER["adaptation"]="adaptation"
 DIRECTORY_TO_CONTAINER["sustinfrastructure"]="infrastructure"
-DIRECTORY_TO_CONTAINER["naturalcapital"]=$AZURE_STORAGE_CONTAINER
+DIRECTORY_TO_CONTAINER["naturalcapital"]="natural-capital"
 
 for dir in "${!DIRECTORY_TO_INDEX[@]}"; do
     for file in ./data/$dir/*; do
