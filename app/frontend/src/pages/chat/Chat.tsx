@@ -12,6 +12,7 @@ import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
 import { SettingsButton } from "../../components/SettingsButton";
 import { ClearChatButton } from "../../components/ClearChatButton";
+import { changeCitationIndexName } from "../../api"; //Note that this is not a setter
 
 const Chat = () => {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -93,6 +94,8 @@ const Chat = () => {
 
     const onIndexNameChange = (_ev: React.FormEvent<HTMLDivElement>, option?: IDropdownOption<string> | undefined, index?: number | undefined) => {
         setIndexName(option?.data || "natural-capital");
+        changeCitationIndexName(option?.data || "natural-capital");
+        clearChat();
     };
 
     const onUseSemanticRankerChange = (_ev?: React.FormEvent<HTMLElement | HTMLInputElement>, checked?: boolean) => {

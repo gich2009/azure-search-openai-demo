@@ -9,6 +9,7 @@ import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
 import { SettingsButton } from "../../components/SettingsButton/SettingsButton";
+import { changeCitationIndexName } from "../../api";
 
 export function Component(): JSX.Element {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -67,6 +68,7 @@ export function Component(): JSX.Element {
 
     const onIndexNameChange = (_ev: React.FormEvent<HTMLDivElement>, option?: IDropdownOption<string> | undefined, index?: number | undefined) => {
         setIndexName(option?.data || "natural-capital");
+        changeCitationIndexName(option?.data || "natural-capital");
     };
 
     const onPromptTemplateChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
