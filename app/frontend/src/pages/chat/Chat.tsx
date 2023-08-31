@@ -13,6 +13,7 @@ import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel
 import { SettingsButton } from "../../components/SettingsButton";
 import { ClearChatButton } from "../../components/ClearChatButton";
 import { changeCitationIndexName } from "../../api"; //Note that this is not a setter
+import { uploadFileApi } from "../../api";
 
 const Chat = () => {
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
@@ -36,6 +37,10 @@ const Chat = () => {
 
     const [selectedAnswer, setSelectedAnswer] = useState<number>(0);
     const [answers, setAnswers] = useState<[user: string, response: AskResponse][]>([]);
+
+    const [uploadedFile, setUploadedFile] = useState(null);
+    const [uploadMessage, setUploadMessage] = useState("Uploaded successfully");
+    const fileInputRef = useRef(null);
 
     const makeApiRequest = async (question: string) => {
         lastQuestionRef.current = question;
@@ -138,6 +143,22 @@ const Chat = () => {
 
         setSelectedAnswer(index);
     };
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) {
+            setUploadMessage("Please select a file before uploading.");
+            return;
+        }
+    
+        try {
+            const response = await uploadFileApi(file, indexName); // Assuming indexName is the state where you're storing the current selected index from the dropdown
+            setUploadMessage(response.success || `Uploaded to ${indexName} successfully!`);
+        } catch (error: any) {
+            setUploadMessage(error.message);
+        }
+    };
+    
 
     return (
         <div className={styles.container}>
@@ -301,6 +322,16 @@ const Chat = () => {
                         required
                         onChange={onIndexNameChange}
                     />
+                    <div className={styles.chatSettingsSeparator}>
+                        <label htmlFor="fileUpload">Upload a File:</label>
+                        <input
+                            id="fileUpload"
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileUpload}
+                        />
+                        {uploadMessage && <p>{uploadMessage}</p>}
+                    </div>
                 </Panel>
             </div>
         </div>

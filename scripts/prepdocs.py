@@ -199,7 +199,8 @@ def get_document_text(filename):
 
     return page_map
 
-def split_text(page_map):
+def split_text(page_map, uploaded_file=None):
+    filename=uploaded_file.filename if uploaded_file else ""
     SENTENCE_ENDINGS = [".", "!", "?"]
     WORDS_BREAKS = [",", ";", ":", " ", "(", ")", "[", "]", "{", "}", "\t", "\n"]
     if args.verbose: print(f"Splitting '{filename}' into sections")
