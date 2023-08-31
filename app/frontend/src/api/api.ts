@@ -75,7 +75,7 @@ export async function uploadFileApi(file: File, indexName?: string): Promise<any
     
     const response = await fetch(uploadUrl, {
         method: "POST",
-        body: formData
+        body:  formData
     });
 
     const parsedResponse = await response.json();

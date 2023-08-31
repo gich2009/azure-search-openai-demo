@@ -146,11 +146,15 @@ const Chat = () => {
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files && event.target.files[0];
+
+        console.log("Upload triggered");
+        console.log(file);
+
         if (!file) {
             setUploadMessage("Please select a file before uploading.");
             return;
         }
-    
+
         try {
             const response = await uploadFileApi(file, indexName); // Assuming indexName is the state where you're storing the current selected index from the dropdown
             setUploadMessage(response.success || `Uploaded to ${indexName} successfully!`);
@@ -158,7 +162,6 @@ const Chat = () => {
             setUploadMessage(error.message);
         }
     };
-    
 
     return (
         <div className={styles.container}>
@@ -324,12 +327,7 @@ const Chat = () => {
                     />
                     <div className={styles.chatSettingsSeparator}>
                         <label htmlFor="fileUpload">Upload a File:</label>
-                        <input
-                            id="fileUpload"
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                        />
+                        <input id="fileUpload" type="file" ref={fileInputRef} onChange={handleFileUpload} />
                         {uploadMessage && <p>{uploadMessage}</p>}
                     </div>
                 </Panel>

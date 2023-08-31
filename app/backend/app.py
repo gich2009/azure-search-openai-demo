@@ -84,9 +84,12 @@ async def content_file(index_name, path):
 @bp.route("/upload", methods=["POST"])
 async def upload_file():
     # Check if a file part is present in the request
-    request_json  = await request.get_json()
-    uploaded_file = request_json["file"]
-
+    try:
+        uploaded_file = request.files.get("file")
+    except Exception as error:
+        print(error)
+        return jsonify({"error": error}), 500
+    
     if not uploaded_file:
         return jsonify({"error": "No file provided."}), 400
 
